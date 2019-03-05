@@ -97,16 +97,21 @@ class Window(Qt.QMainWindow):
         stopButton.clicked.connect(self.stop)
         
         self.pbar = Qt.QProgressBar(self)
-        grid.addWidget(self.pbar, 9, 1)
+        grid.addWidget(self.pbar, 9, 0, 1 , 2)
         
         
         self.square = Qt.QFrame(self)        
         self.square.setStyleSheet("background-color: rgb(255, 0, 0)")
-        grid.addWidget(self.square, 11, 0)
+        grid.addWidget(self.square, 11, 0, 1 , 2)
+        
         
         self.statusbar = self.statusBar()
         
-        grid.setRowStretch(11, 6)
+        
+#         self.Spacer = Qt.QSpacerItem(20, 10, Qt.QSizePolicy.Minimum, Qt.QSizePolicy.MinimumExpanding)
+#         grid.addWidget(self.Spacer, 12, 1)
+        
+        grid.setRowStretch(11, 1)
         controls_dock.setWidget(controls)
         self.addDockWidget(Qt.Qt.LeftDockWidgetArea, controls_dock)
         
@@ -171,7 +176,7 @@ class Window(Qt.QMainWindow):
                           self.start_nm, self.end_nm, self.speed_nm)
         if self.list_ports != 0:
             try:
-                self.name_file = '05.02.19_400_800_32_filtr3-528'
+#                 self.name_file = '05.02.19_400_800_32_filtr3-528'
                 print(self.name_file)
                 proc = Process(target = write_raw.write, args = (self.name_file, self.start_nm, 
                                                         self.end_nm, self.speed_nm, self.com[0], self.q_bar, self.q_str, ))
