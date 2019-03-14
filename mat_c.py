@@ -1,5 +1,6 @@
-import numpy as np
 import scipy.signal as sig
+import numpy as np
+import h5py
 ###############################################
 def mat_calculations(start_nm, speed_nm, name_file, q_str):
 
@@ -111,4 +112,8 @@ def mat_calculations(start_nm, speed_nm, name_file, q_str):
     T = u2/u1
     T = T*100                   ### Нормируем коээф на единицу
     np.savez(save_file, Wavelength = nm, T = T)
+    hf = h5py.File('{}.h5'.format(save_file), 'w')
+    hf.create_dataset('Wavelength', data = nm)
+    hf.create_dataset('T', data = T)
+    hf.close()
     q_str.put('mat_end')
