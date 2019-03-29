@@ -4,14 +4,14 @@ import h5py
 ###############################################
 def mat_calculations(start_nm, speed_nm, name_file, q_str):
 
-    speed_nm = speed_nm*1.0338153250597744  ### Скорость сканирования с учетом коэффициента 
+    speed_nm = speed_nm * 1.0625 ### Скорость сканирования с учетом коэффициента 1.0338153250597744 
     save_file = '{}.npz'.format(name_file)
     data = np.load('{}.npy'.format(name_file))
     ch1 = (data['signals'] & 0b00000100) >> 2   #### Перевый канал
     ch2 = (data['signals'] & 0b00000010) >> 1   #### Втрой канал
     time = data['time']     #### Веремя
     val = data['value']     #### Сигнал с  ФЭУ
-    print(data, '  wait')
+    print('wait')
     #############################
                                 ###    Интервалы каналов
     def range_ch(signal):
@@ -46,8 +46,8 @@ def mat_calculations(start_nm, speed_nm, name_file, q_str):
         v = []
         t = []       
         for sl in zip(m, n):
-                v.append(x[sl[0]:sl[1]])
-                t.append(y[sl[0]:sl[1]])
+            v.append(x[sl[0]:sl[1]])
+            t.append(y[sl[0]:sl[1]])
                 
         return v, t
     
@@ -60,6 +60,7 @@ def mat_calculations(start_nm, speed_nm, name_file, q_str):
     data2 = div2[0][:l]
     time1 = div1[1][:l]
     time2 = div2[1][:l]
+    print('nm')
     #############################
                                 ###     Переход к нанометрам
     def time_to_nm(time):
@@ -82,7 +83,7 @@ def mat_calculations(start_nm, speed_nm, name_file, q_str):
     nm1 = (nm1) + start_nm
     nm2 = (nm2) + start_nm
     nm = (nm1 + nm2)/2
-    print('nm')
+    print('savgol')
     #############################
                                 ###     Устранеие выбросов и отделение от темновго тока
     def savgol_filtr(data):
@@ -104,16 +105,16 @@ def mat_calculations(start_nm, speed_nm, name_file, q_str):
     U1 = savgol_filtr(data1)
     U2 = savgol_filtr(data2)
     #############################
-                                ###    Расчет коэффициэнти пропускания и сохранение струтуры (T, nm) в файл
+                                ###    Расчет коэффициэнта пропускания и сохранение струтуры (coef_t, nm) в файл
     u1 = np.asarray(U1)
     u2 = np.asarray(U2)   
     print(u1, len(u1), type(u1))
     print(u2, len(u2), type(u2))
-    T = u2/u1
-    T = T*100                   ### Нормируем коээф на единицу
-    np.savez(save_file, Wavelength = nm, T = T)
-    hf = h5py.File('{}.h5'.format(save_file), 'w')
+    coef_t = u2/u1
+    coef_t = coef_t*100                   ### Нормируем коээф на единицу
+    np.savez(save_file, Wavelength = nm, T = coef_t)
+    hf = h5py.File('{}.h5'.format(name_file), 'w')
     hf.create_dataset('Wavelength', data = nm)
-    hf.create_dataset('T', data = T)
+    hf.create_dataset('T', data = coef_t)
     hf.close()
     q_str.put('mat_end')
