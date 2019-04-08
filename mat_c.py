@@ -2,13 +2,17 @@ import scipy.signal as sig
 import numpy as np
 import h5py
 ###############################################
-def mat_calculations(start_nm, speed_nm, name_file, q_str):
-
-    speed_nm = speed_nm * 1.0625 ### Скорость сканирования с учетом коэффициента 1.0338153250597744 
-    save_file = '{}.npz'.format(name_file)
-    data = np.load('{}.npy'.format(name_file))
-    ch1 = (data['signals'] & 0b00000100) >> 2   #### Перевый канал
-    ch2 = (data['signals'] & 0b00000010) >> 1   #### Втрой канал
+def mat_calculations(start_nm, speed_nm, name_file, q_str, direct):
+    print(start_nm)
+    print(direct)
+    
+    speed_nm = speed_nm * 1.07 ### Скорость сканирования с учетом коэффициента 1.0338153250597744 
+    save_file =  direct + '\\' + name_file
+    save_file_d = '{}-Optical density'.format(save_file)
+    print(save_file)
+    data = np.load('{}.npy'.format(save_file))
+    ch2 = (data['signals'] & 0b00000100) >> 2   #### Перевый канал
+    ch1 = (data['signals'] & 0b00000010) >> 1   #### Втрой канал
     time = data['time']     #### Веремя
     val = data['value']     #### Сигнал с  ФЭУ
     print('wait')
@@ -74,6 +78,8 @@ def mat_calculations(start_nm, speed_nm, name_file, q_str):
     
     nm1 = time_to_nm(time1)
     nm2 = time_to_nm(time2)
+#     print(nm1[0], nm2[0])
+#     print(nm1[-1], nm2[-1])
     #############################
                                 ###    Усреднение nm с двух каналов
     nm1 = nm1 - nm1[0]
@@ -82,7 +88,10 @@ def mat_calculations(start_nm, speed_nm, name_file, q_str):
     nm2 = np.asarray(nm2)
     nm1 = (nm1) + start_nm
     nm2 = (nm2) + start_nm
+#     print(nm1[0], nm2[0])
+#     print(nm1[-1], nm2[-1])
     nm = (nm1 + nm2)/2
+#     print(nm[0], nm[-1])
     print('savgol')
     #############################
                                 ###     Устранеие выбросов и отделение от темновго тока
@@ -108,13 +117,23 @@ def mat_calculations(start_nm, speed_nm, name_file, q_str):
                                 ###    Расчет коэффициэнта пропускания и сохранение струтуры (coef_t, nm) в файл
     u1 = np.asarray(U1)
     u2 = np.asarray(U2)   
-    print(u1, len(u1), type(u1))
-    print(u2, len(u2), type(u2))
+#     print(u1, len(u1), type(u1))
+#     print(u2, len(u2), type(u2))
     coef_t = u2/u1
+    optical_density = np.log(1/coef_t)
     coef_t = coef_t*100                   ### Нормируем коээф на единицу
+    
     np.savez(save_file, Wavelength = nm, T = coef_t)
-    hf = h5py.File('{}.h5'.format(name_file), 'w')
+    np.savez(save_file_d, Wavelength = nm, T = optical_density)
+    
+    hf1 = h5py.File('{}.h5'.format(save_file_d), 'w')
+    hf1.create_dataset('Wavelength', data = nm)
+    hf1.create_dataset('T', data = optical_density)
+    
+    hf = h5py.File('{}.h5'.format(save_file), 'w')
     hf.create_dataset('Wavelength', data = nm)
     hf.create_dataset('T', data = coef_t)
+    
     hf.close()
+    hf1.close()
     q_str.put('mat_end')

@@ -8,23 +8,38 @@ import numpy as np
 import write_raw
 import datetime
 import h5py
+import os
 
 
 class Window(Qt.QMainWindow):
 
     def __init__(self):
         super().__init__()
+        
         resolution = Qt.QDesktopWidget().screenGeometry()
         self.resize(resolution.width() // 2, resolution.height() // 2)
         self.setWindowIcon(Qt.QIcon('pythonlogo.png'))
         self.setWindowTitle("Spectr")
+        self.mode = 'Dual beam mode'
         self.exporters = exporters
+        self.old_val_bar = False
+        self.q_stop = Queue()
         self.q_bar = Queue()
         self.q_str = Queue()
-        self.q_stop = Queue()
-        self.old_val_bar = False
         self.speed_nm = 128
-        self.start = False     
+        work_data = '\data'
+        self.start = False  
+        path = os.getcwd()
+        self.work_space = path + work_data
+        print(path)
+        try:              
+            os.mkdir(self.work_space)
+            
+        except OSError:  
+            print ("Creation of the directory %s failed" % path)   
+                     
+        print(self.work_space)
+#         print('data'in work_space)
         self.j = 0
         self.init_gui()
         
@@ -49,23 +64,16 @@ class Window(Qt.QMainWindow):
         grid = Qt.QGridLayout(controls)
         grid.addWidget(Qt.QLabel("Start Measure"), 0, 0)
         grid.addWidget(Qt.QLabel("Speed Scan"), 1, 0)
-        grid.addWidget(Qt.QLabel("Start, nm"), 2, 0)
-        grid.addWidget(Qt.QLabel("Stop, nm"), 3, 0)
-        grid.addWidget(Qt.QLabel("Stop Measure"), 4, 0)
-        grid.addWidget(Qt.QLabel("Open file to plot graph"), 5, 0)
-        grid.addWidget(Qt.QLabel("Clear Plot"), 6, 0)
-        grid.addWidget(Qt.QLabel("Com Port"), 7, 0)
-        grid.addWidget(Qt.QLabel("Refresh Port"), 8, 0)
-        grid.addWidget(Qt.QLabel("Save PNG"), 9, 0)
-        grid.addWidget(Qt.QLabel("Save TXT"), 10, 0)
-        
-        openButton = Qt.QPushButton("Open")
-        grid.addWidget(openButton, 5, 1)
-        openButton.clicked.connect(self.on_open)
-        
-        clearButton = Qt.QPushButton("Clear")
-        grid.addWidget(clearButton, 6, 1)
-        clearButton.clicked.connect(self.clear_plot)
+        grid.addWidget(Qt.QLabel("Mode Scan"), 2, 0)
+        grid.addWidget(Qt.QLabel("Start, nm"), 3, 0)
+        grid.addWidget(Qt.QLabel("Stop, nm"), 4, 0)
+        grid.addWidget(Qt.QLabel("Stop Measure"), 5, 0)
+        grid.addWidget(Qt.QLabel("Open file to plot graph"), 6, 0)
+        grid.addWidget(Qt.QLabel("Clear Plot"), 7, 0)
+        grid.addWidget(Qt.QLabel("Com Port"), 8, 0)
+        grid.addWidget(Qt.QLabel("Refresh Port"), 9, 0)
+        grid.addWidget(Qt.QLabel("Save PNG"), 10, 0)
+        grid.addWidget(Qt.QLabel("Save TXT"), 11, 0)
         
         self.startButton = Qt.QPushButton("Start")
         grid.addWidget(self.startButton, 0, 1)
@@ -74,7 +82,42 @@ class Window(Qt.QMainWindow):
         combo = Qt.QComboBox(self)
         combo.addItems(["128", "32", "8"])
         combo.activated[str].connect(self.speed_scan)
-        grid.addWidget(combo, 1, 1)    
+        grid.addWidget(combo, 1, 1)
+        
+        
+        combo1 = Qt.QComboBox(self)
+        combo1.addItems(["Dual beam mode", "Single beam mode"])
+        combo1.activated[str].connect(self.mode_scan)
+        grid.addWidget(combo1, 2, 1)
+        
+        
+        self.spinBoxStart = Qt.QSpinBox()
+        self.spinBoxStart.setRange(0 , 1200)
+        grid.addWidget(self.spinBoxStart, 3, 1)
+        self.spinBoxStart.setValue(400)
+        
+        
+        self.spinBoxEnd = Qt.QSpinBox()
+        self.spinBoxEnd.setRange(0 , 1200)
+        grid.addWidget(self.spinBoxEnd, 4, 1)
+        self.spinBoxEnd.setValue(800)
+        
+        
+        self.stopButton = Qt.QPushButton("Stop")
+        grid.addWidget(self.stopButton, 5, 1)
+        self.stopButton.clicked.connect(self.stop)
+        self.stopButton.setEnabled(False)
+        
+        
+        openButton = Qt.QPushButton("Open")
+        grid.addWidget(openButton, 6, 1)
+        openButton.clicked.connect(self.on_open)
+        
+        
+        clearButton = Qt.QPushButton("Clear")
+        grid.addWidget(clearButton, 7, 1)
+        clearButton.clicked.connect(self.clear_plot)
+        
         
         self.combo1 = Qt.QComboBox(self)
         self.combo1.addItems(self.list_ports)
@@ -82,48 +125,35 @@ class Window(Qt.QMainWindow):
         self.com = self.list_ports
         if len(self.com) != 0:
             self.com = self.com[0]
-        grid.addWidget(self.combo1, 7, 1)
+        grid.addWidget(self.combo1, 8, 1)
+
 
         refreshButton = Qt.QPushButton("Refresh")
-        grid.addWidget(refreshButton, 8, 1)
+        grid.addWidget(refreshButton, 9, 1)
         refreshButton.clicked.connect(self.refresh_port)
-               
-        self.spinBoxStart = Qt.QSpinBox()
-        self.spinBoxStart.setRange(0 , 1200)
-        grid.addWidget(self.spinBoxStart, 2, 1)
-        self.spinBoxStart.setValue(400)
-        
-        self.spinBoxEnd = Qt.QSpinBox()
-        self.spinBoxEnd.setRange(0 , 1200)
-        grid.addWidget(self.spinBoxEnd, 3, 1)
-        self.spinBoxEnd.setValue(800)
-        
-        self.stopButton = Qt.QPushButton("Stop")
-        grid.addWidget(self.stopButton, 4, 1)
-        self.stopButton.clicked.connect(self.stop)
-        self.stopButton.setEnabled(False)
+    
         
         self.pngButton = Qt.QPushButton("PNG")
-        grid.addWidget(self.pngButton, 9, 1)
+        grid.addWidget(self.pngButton, 10, 1)
         self.pngButton.clicked.connect(self.png)
         self.pngButton.setEnabled(False)
         
         self.txtButton = Qt.QPushButton("TXT")
-        grid.addWidget(self.txtButton, 10, 1)
+        grid.addWidget(self.txtButton, 11, 1)
         self.txtButton.clicked.connect(self.txt)
         self.txtButton.setEnabled(False)
         
         self.pbar = Qt.QProgressBar(self)
-        grid.addWidget(self.pbar, 11, 0, 2 , 2)
+        grid.addWidget(self.pbar, 12, 0, 2 , 2)
         
         self.label = Qt.QLabel()
         self.label.setStyleSheet('background-color: rgb(255, 0, 0);')  
-        grid.addWidget(self.label, 13, 0, 2 , 2)
+        grid.addWidget(self.label, 14, 0, 2 , 2)
+        grid.setRowStretch(14, 2)
+        grid.setRowStretch(16, 1)
         
-        grid.setRowStretch(15, 5)
         self.statusbar = self.statusBar()
         
-        grid.setRowStretch(13, 6)
         controls_dock.setWidget(controls)
         self.addDockWidget(Qt.Qt.LeftDockWidgetArea, controls_dock)
              
@@ -153,8 +183,8 @@ class Window(Qt.QMainWindow):
         else:
             self.name_file = val[:-4]      
             self.data = np.load(val)
-            
             self.plot.plot(self.data['Wavelength'], self.data['T'], pen = pg.mkPen(color[self.j], width = 3))
+        
         self.plot.showGrid(x = True, y = True, alpha = 0.7)
         self.plot.setYRange(0, 100)
         self.plot.setLabel('left', "T, %", **labelStyle)
@@ -207,7 +237,8 @@ class Window(Qt.QMainWindow):
                 self.label.setStyleSheet("background-color: rgb(255, 255, 50)")
             
             if self.val_str == 'mat_end':
-                self.graph('{}.npz'.format(self.name_file))
+                print(self.graph_file)
+                self.graph('{}.npz'.format(self.graph_file))
                 self.statusbar.showMessage('Done')
                 self.startButton.setEnabled(True)
                 self.pbar.setValue(100)
@@ -218,6 +249,7 @@ class Window(Qt.QMainWindow):
                 
                 
     def start_measure(self):
+        
         self.start_nm = self.spinBoxStart.value()
         self.end_nm = self.spinBoxEnd.value()
         if self.end_nm <= self.start_nm:
@@ -225,17 +257,34 @@ class Window(Qt.QMainWindow):
         if self.end_nm > self.start_nm: 
             self.stopButton.setEnabled(True)
             self.startButton.setEnabled(False)
-
+        
+        
+            if self.mode == 'Dual beam mode':
+                print("Dual beam mode") 
+                self.name_file = 'Dual_{}__Scan Range {}-{}__Speed Scan {}'.format(datetime.datetime.now().strftime("%y-%m-%d, %H-%M"), 
+                              self.start_nm, self.end_nm, self.speed_nm)   
+        
+            if self.mode == 'Single beam mode':
+                print("Single beam mode") 
+                self.name_file = 'Single_{}__Scan Range {}-{}__Speed Scan {}'.format(datetime.datetime.now().strftime("%y-%m-%d, %H-%M"), 
+                              self.start_nm, self.end_nm, self.speed_nm)
+                
+            print(self.name_file)
             self.q_stop.put(False)
             self.pbar.setValue(0)
             self.plot.clear()
-            self.name_file = '{}__Scan Range {}-{}__Speed Scan {}'.format(datetime.datetime.now().strftime("%y-%m-%d, %H-%M"), 
-                          self.start_nm, self.end_nm, self.speed_nm)
+            self.direct = self.work_space + "\\" + self.name_file
+            self.graph_file = self.direct + '\\' + self.name_file
+            try:
+                self.direction = os.mkdir(self.direct)
+            except OSError:  
+                print ("Creation of the directory failed")
+            print(self.direction)
         
             if self.list_ports != 0:
                 try:
                     proc = Process(target = write_raw.write, args = (self.name_file, self.start_nm, 
-                                                        self.end_nm, self.speed_nm, self.com, self.q_bar, self.q_str, self.q_stop, ))
+                                                        self.end_nm, self.speed_nm, self.com, self.q_bar, self.q_str, self.q_stop, self.mode, self.direct, ))
                     proc.start()
                     self.timer = Qt.QTimer()
                     self.timer.timeout.connect(self.tick)
@@ -255,6 +304,10 @@ class Window(Qt.QMainWindow):
         
     def speed_scan(self, text):
         self.speed_nm = int(text)
+        
+    def mode_scan(self, text):
+        print(text)
+        self.mode = text
         
         
     def com_port(self, text):
