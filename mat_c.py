@@ -120,11 +120,18 @@ def mat_calculations(start_nm, speed_nm, name_file, q_str, direct):
 #     print(u1, len(u1), type(u1))
 #     print(u2, len(u2), type(u2))
     coef_t = u2/u1
+    in_nan = np.where(~np.isnan(coef_t))
+    coef_t = coef_t[in_nan]
+    nm = nm[in_nan]
+    
     optical_density = np.log(1/coef_t)
     coef_t = coef_t*100                   ### Нормируем коээф на единицу
     
-    np.savez(save_file, Wavelength = nm, T = coef_t)
-    np.savez(save_file_d, Wavelength = nm, T = optical_density)
+#     np.savez(save_file, Wavelength = nm, T = coef_t)
+#     np.savez(save_file_d, Wavelength = nm, T = optical_density)
+    
+    np.savetxt('{}.csv'.format(save_file), np.transpose([nm, coef_t]), delimiter = ',', fmt='%s')
+    np.savetxt('{}.csv'.format(save_file_d), np.transpose([nm, optical_density]), delimiter = ',', fmt='%s')
     
     hf1 = h5py.File('{}.h5'.format(save_file_d), 'w')
     hf1.create_dataset('Wavelength', data = nm)

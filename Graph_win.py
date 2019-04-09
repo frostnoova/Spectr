@@ -91,13 +91,13 @@ class Window(Qt.QMainWindow):
         grid.addWidget(combo1, 2, 1)
         
         
-        self.spinBoxStart = Qt.QSpinBox()
+        self.spinBoxStart = Qt.QDoubleSpinBox()
         self.spinBoxStart.setRange(0 , 1200)
         grid.addWidget(self.spinBoxStart, 3, 1)
         self.spinBoxStart.setValue(400)
         
         
-        self.spinBoxEnd = Qt.QSpinBox()
+        self.spinBoxEnd = Qt.QDoubleSpinBox()
         self.spinBoxEnd.setRange(0 , 1200)
         grid.addWidget(self.spinBoxEnd, 4, 1)
         self.spinBoxEnd.setValue(800)
@@ -147,7 +147,7 @@ class Window(Qt.QMainWindow):
         grid.addWidget(self.pbar, 12, 0, 2 , 2)
         
         self.label = Qt.QLabel()
-        self.label.setStyleSheet('background-color: rgb(255, 0, 0);')  
+        self.label.setStyleSheet('background-color: rgb(255, 255, 0);')  
         grid.addWidget(self.label, 14, 0, 2 , 2)
         grid.setRowStretch(14, 2)
         grid.setRowStretch(16, 1)
@@ -162,7 +162,7 @@ class Window(Qt.QMainWindow):
         op = Qt.QFileDialog.getOpenFileName(parent = None, 
         caption = 'Open file to plot graph',
         directory = Qt.QDir.currentPath(), 
-        filter = '(*.npz) ;; (*.H5)')
+        filter = '(*.H5)')  #### ;; (*.npz)
         if len(op[0]) != 0:
             self.graph(op[0]) 
         
@@ -170,20 +170,22 @@ class Window(Qt.QMainWindow):
     def graph(self, val):
         
         color = ['y','b', 'r', 'g']
+        if self.j == len(color)-1:
+            self.j = 0
         labelStyle = {'color': '#eeeeee', 'font-size': '10pt'}
         self.plot.setAutoVisible(y = True)
         
-        if not val.endswith('npz'):
-            self.name_file = val[:-3]
-            hf = h5py.File('{}'.format(val), 'r')
-            T = np.array(hf['T'])
-            wave = np.array(hf['Wavelength'])
-            self.plot.plot(wave, T, pen = pg.mkPen(color[self.j], width = 3))
-            hf.close()
-        else:
-            self.name_file = val[:-4]      
-            self.data = np.load(val)
-            self.plot.plot(self.data['Wavelength'], self.data['T'], pen = pg.mkPen(color[self.j], width = 3))
+#    if not val.endswith('npz'):
+        self.name_file = val[:-3]
+        hf = h5py.File('{}'.format(val), 'r')
+        coef_t = np.array(hf['T'])
+        self.wave = np.array(hf['Wavelength'])
+        self.plot.plot(self.wave, coef_t, pen = pg.mkPen(color[self.j], width = 3))
+        hf.close()
+#        else:
+#            self.name_file = val[:-4]      
+#            self.data = np.load(val)
+#            self.plot.plot(self.data['Wavelength'], self.data['T'], pen = pg.mkPen(color[self.j], width = 3))
         
         self.plot.showGrid(x = True, y = True, alpha = 0.7)
         self.plot.setYRange(0, 100)
@@ -193,7 +195,7 @@ class Window(Qt.QMainWindow):
         self.pngButton.setEnabled(True)
         self.txtButton.setEnabled(True)
         
-        self.label.setStyleSheet('background-color: rgb(255, 255, 255);')
+        self.label.setStyleSheet('background-color: rgb(255, 255, 0);')
         self.plot.scene().sigMouseMoved.connect(self.mouseMoved)
         self.vb = self.plot.vb
         self.j = self.j +1
@@ -204,7 +206,7 @@ class Window(Qt.QMainWindow):
         if self.plot.sceneBoundingRect().contains(pos):
             mousePoint = self.vb.mapSceneToView(pos)
             index = int(mousePoint.x())
-            if index > 0 and index < len(self.data['Wavelength']):
+            if index > 0 and index < len(self.wave):
                 self.label.setText("<span style='font-size: 15pt'>x=%0.1f, <span style='color: black'>y=%0.1f</span>" % (mousePoint.x(), mousePoint.y()))
             self.vLine.setPos(mousePoint.x())
             self.hLine.setPos(mousePoint.y())
@@ -228,19 +230,24 @@ class Window(Qt.QMainWindow):
             self.statusbar.showMessage(self.val_str)
             
             if self.val_str == 'Get ready':
-                self.label.setStyleSheet("background-color: rgb(255, 255, 50)")
+                self.label.setStyleSheet("background-color: rgb(255, 0, 0)")
+                self.label.setText("<span style='font-size: 15pt'>Нажмите красную кнопку</span>")
                 
             if self.val_str == 'Scaning':
-                self.label.setStyleSheet("background-color: rgb(50, 205, 50)") 
+                self.label.setStyleSheet("background-color: rgb(50, 205, 50)")
+                self.label.setText("") 
                    
             if self.val_str == 'Mathematical processing':
-                self.label.setStyleSheet("background-color: rgb(255, 255, 50)")
+                self.label.setStyleSheet("background-color: rgb(255, 255, 0)")
+                self.label.setText("<span style='font-size: 15pt'>Можете нажать <br /> желтую кнопку</span>")
             
             if self.val_str == 'mat_end':
+                self.label.setText("")
                 print(self.graph_file)
-                self.graph('{}.npz'.format(self.graph_file))
+                self.graph('{}.h5'.format(self.graph_file))
                 self.statusbar.showMessage('Done')
                 self.startButton.setEnabled(True)
+                self.stopButton.setEnabled(False)
                 self.pbar.setValue(100)
                 self.timer.disconnect()
                 
@@ -249,39 +256,44 @@ class Window(Qt.QMainWindow):
                 
                 
     def start_measure(self):
-        
-        self.start_nm = self.spinBoxStart.value()
-        self.end_nm = self.spinBoxEnd.value()
-        if self.end_nm <= self.start_nm:
-            self.statusbar.showMessage('Wrong range')
-        if self.end_nm > self.start_nm: 
-            self.stopButton.setEnabled(True)
-            self.startButton.setEnabled(False)
-        
-        
-            if self.mode == 'Dual beam mode':
-                print("Dual beam mode") 
-                self.name_file = 'Dual_{}__Scan Range {}-{}__Speed Scan {}'.format(datetime.datetime.now().strftime("%y-%m-%d, %H-%M"), 
-                              self.start_nm, self.end_nm, self.speed_nm)   
-        
-            if self.mode == 'Single beam mode':
-                print("Single beam mode") 
-                self.name_file = 'Single_{}__Scan Range {}-{}__Speed Scan {}'.format(datetime.datetime.now().strftime("%y-%m-%d, %H-%M"), 
-                              self.start_nm, self.end_nm, self.speed_nm)
+        if len(self.list_ports) != 0:
+            self.label.setText("")
+    #         if self.plot.scene().sigMouseMoved.connect(self.mouseMoved):
+    #             self.plot.scene().sigMouseMoved.disconnect(self.mouseMoved)
+            self.start_nm = self.spinBoxStart.value()
+            self.end_nm = self.spinBoxEnd.value()
+            
+            if self.end_nm <= self.start_nm:
+                self.statusbar.showMessage('Wrong range')
                 
-            print(self.name_file)
-            self.q_stop.put(False)
-            self.pbar.setValue(0)
-            self.plot.clear()
-            self.direct = self.work_space + "\\" + self.name_file
-            self.graph_file = self.direct + '\\' + self.name_file
-            try:
-                self.direction = os.mkdir(self.direct)
-            except OSError:  
-                print ("Creation of the directory failed")
-            print(self.direction)
-        
-            if self.list_ports != 0:
+            if self.end_nm > self.start_nm: 
+                self.stopButton.setEnabled(True)
+                self.startButton.setEnabled(False)
+            
+                if self.mode == 'Dual beam mode':
+                    print("Dual beam mode") 
+                    self.name_file = 'Dual_{}__Scan Range {}-{}__Speed Scan {}'.format(datetime.datetime.now().strftime("%y-%m-%d, %H-%M"), 
+                                  self.start_nm, self.end_nm, self.speed_nm)   
+            
+                if self.mode == 'Single beam mode':
+                    print("Single beam mode") 
+                    self.name_file = 'Single_{}__Scan Range {}-{}__Speed Scan {}'.format(datetime.datetime.now().strftime("%y-%m-%d, %H-%M"), 
+                                  self.start_nm, self.end_nm, self.speed_nm)
+                    
+                print(self.name_file)
+                self.q_stop.put(False)
+                self.pbar.setValue(0)
+                self.plot.clear()
+                self.direct = self.work_space + "\\" + self.name_file
+                self.graph_file = self.direct + '\\' + self.name_file
+                try:
+                    self.direction = os.mkdir(self.direct)
+                    print(self.direction)
+                except OSError:  
+                    print ("Creation of the directory failed")
+                
+                print(self.list_ports, 'self.list_ports')
+                
                 try:
                     proc = Process(target = write_raw.write, args = (self.name_file, self.start_nm, 
                                                         self.end_nm, self.speed_nm, self.com, self.q_bar, self.q_str, self.q_stop, self.mode, self.direct, ))
@@ -298,12 +310,14 @@ class Window(Qt.QMainWindow):
                        
         
     def clear_plot(self):
-        self.plot.clear()
         self.statusbar.showMessage('Clear')
+        self.label.setText("")
+        self.plot.clear()  
         
         
     def speed_scan(self, text):
         self.speed_nm = int(text)
+       
         
     def mode_scan(self, text):
         print(text)
@@ -326,6 +340,7 @@ class Window(Qt.QMainWindow):
         self.label.setStyleSheet('background-color: rgb(255, 0, 0);')
         self.statusbar.showMessage('Stop')
         self.startButton.setEnabled(True)
+        self.stopButton.setEnabled(False)
         self.q_stop.put(True)
         self.timer.disconnect()
         

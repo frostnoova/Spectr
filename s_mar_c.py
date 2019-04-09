@@ -74,6 +74,7 @@ def mat_calculations(start_nm, speed_nm, name_file, q_str, direct):
     nm = (nm2[::2] + nm2[1::2])/2
     ################################
     np.savez(save_file, Wavelength = nm, T = sr_val)
+    np.savetxt('{}.csv'.format(save_file), np.transpose([nm, sr_val]), delimiter = ',', fmt='%s')
     hf = h5py.File('{}.h5'.format(save_file), 'w')
     hf.create_dataset('Wavelength', data = nm)
     hf.create_dataset('T', data = sr_val)
