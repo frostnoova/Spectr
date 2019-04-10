@@ -8,6 +8,7 @@ import time
 def write(name_file, start_nm, end_nm, speed_nm, com, q_bar, q_str, q_stop, mode, direct):
     print(direct)
 #     np.save(direct + '\\' + name_file, [1, 2, 3, 4, 5])
+    speed_nm1 = speed_nm
     old_l = 0
     stop = False
     q_str.put('Scan starting')
@@ -121,9 +122,9 @@ def write(name_file, start_nm, end_nm, speed_nm, com, q_bar, q_str, q_stop, mode
         data = data[ind]
         np.save(direct + '//' + name_file, data)
         time.sleep(1)
-        speed_nm = 128
+        
         q_str.put('Mathematical processing')
         if mode == 'Dual beam mode':
-            mat_c.mat_calculations(start_nm, speed_nm, name_file, q_str, direct)
+            mat_c.mat_calculations(start_nm, speed_nm1, name_file, q_str, direct)
         if mode == 'Single beam mode':
-            s_mar_c.mat_calculations(start_nm, speed_nm, name_file, q_str, direct)    
+            s_mar_c.mat_calculations(start_nm, speed_nm1, name_file, q_str, direct)    

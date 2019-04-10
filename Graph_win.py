@@ -17,7 +17,7 @@ class Window(Qt.QMainWindow):
         super().__init__()
         
         resolution = Qt.QDesktopWidget().screenGeometry()
-        self.resize(resolution.width() // 2, resolution.height() // 2)
+        self.resize(resolution.width() // 1.5, resolution.height() // 1.5)
         self.setWindowIcon(Qt.QIcon('pythonlogo.png'))
         self.setWindowTitle("Spectr")
         self.mode = 'Dual beam mode'
@@ -52,7 +52,7 @@ class Window(Qt.QMainWindow):
         self.view = pg.GraphicsWindow(title = "Basic plotting")
         self.plot = self.view.addPlot(name = "Plot", title = '')
         self.setCentralWidget(self.view)
-        self.view.setBackground('k')
+        self.view.setBackground('w')
         self.vLine = pg.InfiniteLine(angle = 90, movable = False, label = 'x={value:0.2f}', labelOpts={'position':0.94, 'color': (255,69,0)})
         self.hLine = pg.InfiniteLine(angle = 0, movable = False, label = 'y={value:0.2f}', labelOpts={'position':0.94,  'color': (255, 0, 0)})
         self.plot.addItem(self.vLine, ignoreBounds = True)
@@ -73,7 +73,7 @@ class Window(Qt.QMainWindow):
         grid.addWidget(Qt.QLabel("Com Port"), 8, 0)
         grid.addWidget(Qt.QLabel("Refresh Port"), 9, 0)
         grid.addWidget(Qt.QLabel("Save PNG"), 10, 0)
-        grid.addWidget(Qt.QLabel("Save TXT"), 11, 0)
+#         grid.addWidget(Qt.QLabel("Save TXT"), 11, 0)
         
         self.startButton = Qt.QPushButton("Start")
         grid.addWidget(self.startButton, 0, 1)
@@ -138,10 +138,10 @@ class Window(Qt.QMainWindow):
         self.pngButton.clicked.connect(self.png)
         self.pngButton.setEnabled(False)
         
-        self.txtButton = Qt.QPushButton("TXT")
-        grid.addWidget(self.txtButton, 11, 1)
-        self.txtButton.clicked.connect(self.txt)
-        self.txtButton.setEnabled(False)
+#         self.txtButton = Qt.QPushButton("TXT")
+#         grid.addWidget(self.txtButton, 11, 1)
+#         self.txtButton.clicked.connect(self.txt)
+#         self.txtButton.setEnabled(False)
         
         self.pbar = Qt.QProgressBar(self)
         grid.addWidget(self.pbar, 12, 0, 2 , 2)
@@ -169,10 +169,10 @@ class Window(Qt.QMainWindow):
 
     def graph(self, val):
         
-        color = ['y','b', 'r', 'g']
+        color = ['k','b','g', 'r', 'y']
         if self.j == len(color)-1:
             self.j = 0
-        labelStyle = {'color': '#eeeeee', 'font-size': '10pt'}
+        labelStyle = {'color': '#000000', 'font-size': '10pt'}
         self.plot.setAutoVisible(y = True)
         
 #    if not val.endswith('npz'):
@@ -193,7 +193,7 @@ class Window(Qt.QMainWindow):
         self.plot.setLabel('bottom', "Wavelength, nm", **labelStyle)
         
         self.pngButton.setEnabled(True)
-        self.txtButton.setEnabled(True)
+#        self.txtButton.setEnabled(True)
         
         self.label.setStyleSheet('background-color: rgb(255, 255, 0);')
         self.plot.scene().sigMouseMoved.connect(self.mouseMoved)
@@ -353,10 +353,10 @@ class Window(Qt.QMainWindow):
         exporter.export('{}.png'.format(self.name_file))
         
     
-    def txt(self):
-        print(self.data['Wavelength'])
-        np.savetxt('{}.txt'.format(self.name_file), np.transpose([self.data['Wavelength'], self.data['T']]), delimiter= 10*' '
-                   , fmt='%1.3f', header = 'Wavelength    T')
+#     def txt(self):
+# 
+#         np.savetxt('{}.txt'.format(self.name_file), np.transpose([self.data['Wavelength'], self.data['T']]), delimiter= 10*' '
+#                    , fmt='%1.3f', header = 'Wavelength    T')
         
         
 if __name__ == "__main__":

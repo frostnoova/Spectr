@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import scipy.signal as sig
 import numpy as np
 import h5py
@@ -129,6 +130,18 @@ def mat_calculations(start_nm, speed_nm, name_file, q_str, direct):
     
 #     np.savez(save_file, Wavelength = nm, T = coef_t)
 #     np.savez(save_file_d, Wavelength = nm, T = optical_density)
+    
+    fig, ax = plt.subplots()
+    ax.plot(nm, coef_t)
+    ax.set(xlabel='nm', ylabel='T, %')
+    fig.savefig('{}.svg'.format(save_file))
+    plt.close()
+    
+    fig1, ax1 = plt.subplots()
+    ax1.plot(nm, optical_density)
+    ax1.set(xlabel='nm', ylabel='D-Optical_density')
+    fig1.savefig('{}.svg'.format(save_file_d))
+    plt.close()
     
     np.savetxt('{}.csv'.format(save_file), np.transpose([nm, coef_t]), delimiter = ',', fmt='%s')
     np.savetxt('{}.csv'.format(save_file_d), np.transpose([nm, optical_density]), delimiter = ',', fmt='%s')
